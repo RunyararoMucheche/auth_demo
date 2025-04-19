@@ -4,6 +4,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const User = require("./models/user");
 const bcrypt = require("bcrypt");
+const session = require("express-session");
 
 mongoose.connect("mongodb://127.0.0.1:27017/authDemo");
 
@@ -17,6 +18,7 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 app.use(express.urlencoded({ extended: true }));
+app.use(session({ secret: "notagoodsecret" }));
 
 app.get("/", (req, res) => {
   res.send("THIS IS THE HOME PAGE");
@@ -31,6 +33,7 @@ app.post("/register", async (req, res) => {
   const hash = await bcrypt.hash(password, 12);
   const user = new User({ username, password: hash });
   await user.save();
+  req.session.user_id = user._id;
   res.redirect("/");
 });
 
@@ -43,13 +46,17 @@ app.post("/login", async (req, res) => {
   const user = await User.findOne({ username });
   const validLogin = await bcrypt.compare(password, user.password);
   if (validLogin) {
-    res.send("You've Successfully Logged In!!!");
+    req.session.user_id = user._id;
+    res.redirect("/secret");
   } else {
-    res.send("INCORRECT! PLEASE TRY AGAIN");
+    res.redirect("/login");
   }
 });
 
 app.get("/secret", (req, res) => {
+  if (!req.session.user_id) {
+    res.redirect("/login");
+  }
   res.send("THIS IS A SECRET PAGE! IT WON'T BE HERE IN THE FUTURE");
 });
 
