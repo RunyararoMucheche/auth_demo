@@ -38,8 +38,15 @@ app.get("/login", (req, res) => {
   res.render("login");
 });
 
-app.post("/login", (req, res) => {
-  console.log(req.body);
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username });
+  const validLogin = await bcrypt.compare(password, user.password);
+  if (validLogin) {
+    res.send("You've Successfully Logged In!!!");
+  } else {
+    res.send("INCORRECT! PLEASE TRY AGAIN");
+  }
 });
 
 app.get("/secret", (req, res) => {
